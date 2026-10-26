@@ -1,0 +1,11 @@
+// Copy to Local.xcconfig (git ignores it) to sign with your own Apple developer team, then
+// uncomment the lines below. Copied as it is, it changes nothing: builds sign to run locally.
+
+// Your team ID, from developer.apple.com > Account > Membership.
+// DEVELOPMENT_TEAM = ABCDE12345
+
+// A bundle ID your team owns. The extensions, the App Group (group.<bundle ID>), the iCloud store
+// and the push app ID follow it. Xenia's push gateway only delivers to Xenia's own app IDs, so
+// builds under another ID notify while the app runs (and on the simulator, through
+// scripts/dev/push-gateway.mjs).
+// XENIA_BUNDLE_ID = com.example.xenia

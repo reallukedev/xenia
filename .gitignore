@@ -1,0 +1,24 @@
+# Rust build output (a symlink to a roomier disk is fine).
+/target
+
+# Xcode
+apple/Xenia.xcodeproj/
+*.xcuserstate
+xcuserdata/
+DerivedData/
+.build/
+
+# The generated bindings' timestamp (the bindings themselves are committed).
+apple/XeniaCore/Generated/.source
+
+.DS_Store
+*.log
+.cache/
+
+# Your own signing team and bundle ID (see apple/Local.xcconfig.example).
+apple/Local.xcconfig
+
+# APNs keys and environment files (the push gateway reads its key from Vercel).
+*.p8
+.env
+.env.*

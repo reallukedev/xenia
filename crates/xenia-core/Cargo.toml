@@ -1,0 +1,48 @@
+[package]
+name = "xenia-core"
+description = "Xenia's shared engine: the Matrix client, its state and every rule the apps agree on."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "../../README.md"
+keywords = ["matrix", "messaging", "chat", "uniffi", "e2ee"]
+categories = ["network-programming"]
+# An app's engine, built with the apps rather than published on its own.
+publish = false
+
+[lib]
+# lib: Rust front ends (a future GTK or WinUI app) link it directly.
+# staticlib: the Apple apps, through the generated Swift bindings.
+# cdylib: Android (Kotlin bindings) and anything else that loads a shared library.
+crate-type = ["lib", "staticlib", "cdylib"]
+name = "xenia_core"
+
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+eyeball = "0.8"
+eyeball-im = "0.9"
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+matrix-sdk = { version = "0.19.1", features = ["bundled-sqlite", "markdown", "experimental-search"] }
+matrix-sdk-ui = { version = "0.19.1" }
+mime = "0.3"
+mime_guess = "2"
+regex = "1"
+ruma = { version = "0.17.2", features = ["html"] }
+serde = { version = "1", features = ["derive"] }
+sha2 = "0.10"
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1.48", features = ["rt-multi-thread", "macros", "sync", "time", "fs"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+unicode-normalization = "0.1"
+uniffi = { workspace = true, features = ["tokio"] }
+url = "2"
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tokio = { version = "1.48", features = ["rt-multi-thread", "macros", "test-util"] }
+tempfile = "3"

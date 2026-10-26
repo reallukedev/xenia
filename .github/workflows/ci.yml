@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  core:
+    name: xenia-core
+    # The core has no Apple-only dependencies, so Linux runs its checks faster and cheaper.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Test
+        run: cargo test -p xenia-core --locked
+
+  push-gateway:
+    name: Push gateway
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/push-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test
+        run: npm test
+
+  apple:
+    name: Mac app
+    # Xenia needs Xcode 27. Hosted runners can take a few weeks to carry a new Xcode, so until
+    # latest-stable reaches 27 this job fails at the build step.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate the project
+        working-directory: apple
+        run: |
+          if [ -f Local.xcconfig.example ] && [ ! -f Local.xcconfig ]; then cp Local.xcconfig.example Local.xcconfig; fi
+          xcodegen
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project apple/Xenia.xcodeproj \
+            -scheme "Xenia macOS" \
+            -destination 'generic/platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO

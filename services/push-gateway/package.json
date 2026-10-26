@@ -1,0 +1,10 @@
+{
+  "name": "xenia-push-gateway",
+  "private": true,
+  "type": "module",
+  "description": "Xenia's Matrix push gateway: forwards homeserver pushes to Apple (APNs).",
+  "engines": { "node": "22.x" },
+  "scripts": {
+    "test": "node --test"
+  }
+}

@@ -1,0 +1,7 @@
+[bindings.swift]
+# The Swift module apps import, and the C module the generated code uses underneath it.
+module_name = "XeniaCore"
+ffi_module_name = "XeniaCoreFFI"
+ffi_module_filename = "XeniaCoreFFI"
+# Records become `let` properties: they're snapshots from the core, never edited in place.
+generate_immutable_records = true

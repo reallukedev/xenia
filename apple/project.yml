@@ -1,0 +1,305 @@
+# Xenia for iPhone and Mac. Generate the Xcode project with:
+#
+#   cd apple && xcodegen
+#
+# Three kinds of targets:
+#   XeniaCore_iOS / XeniaCore_macOS  The Rust engine's Swift bindings, as a static framework. Its
+#                                    first build phase compiles the Rust for the platform being
+#                                    built (scripts/apple/build-core.sh).
+#   Xenia_iOS / Xenia_macOS          The apps. SwiftUI throughout; shared code in Shared/, each
+#                                    platform's own shell in iOS/ and macOS/.
+#   XeniaTests, XeniaTests_iOS Swift Testing tests for the app layer, on the Mac and in the simulator.
+name: Xenia
+
+options:
+  bundleIdPrefix: dev.xenia
+  deploymentTarget:
+    iOS: "26.0"
+    macOS: "26.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  developmentLanguage: en
+
+# The signing team and bundle ID live here, so a build works without Xenia's team. Set your own
+# in Local.xcconfig (see Local.xcconfig.example).
+configFiles:
+  Debug: Xenia.xcconfig
+  Release: Xenia.xcconfig
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    # Without this a Mac Developer ID profile leaves out the "group." app group, and macOS then
+    # refuses writes to the group's preferences.
+    REGISTER_APP_GROUPS: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    DEAD_CODE_STRIPPING: YES
+    ENABLE_MODULE_VERIFIER: NO
+    # Where scripts/apple/build-core.sh leaves the Rust library for this platform and configuration.
+    XENIA_RUST_TARGET[sdk=macosx*]: aarch64-apple-darwin
+    XENIA_RUST_TARGET[sdk=iphoneos*]: aarch64-apple-ios
+    XENIA_RUST_TARGET[sdk=iphonesimulator*]: aarch64-apple-ios-sim
+    XENIA_RUST_PROFILE: debug
+    XENIA_CORE_LIB: $(SRCROOT)/../target/$(XENIA_RUST_TARGET)/$(XENIA_RUST_PROFILE)/libxenia_core.a
+    ARCHS: arm64
+    ONLY_ACTIVE_ARCH: YES
+    # The server sign-in starts with. Debug builds point at the local test server.
+    XENIA_DEFAULT_SERVER: matrix.org
+    # Where every homeserver sends this device's pushes: Xenia's gateway (services/push-gateway,
+    # on Vercel), which holds the APNs key. Empty turns push off; notifications then arrive only
+    # while Xenia runs.
+    XENIA_PUSH_GATEWAY: https://xenia-push-gateway.vercel.app/_matrix/push/v1/notify
+    # YES once Apple grants the extension com.apple.developer.usernotifications.filtering (add it
+    # to XeniaNotifications.entitlements too): pushes that shouldn't alert are then dropped
+    # instead of landing quietly in Notification Center.
+    XENIA_CAN_SILENCE_PUSHES: NO
+  configs:
+    Debug:
+      XENIA_DEFAULT_SERVER: localhost:8008
+      # The simulator has no APNs token: scripts/dev/push-gateway.mjs hands it pushes instead.
+      # Debug builds on a phone use the real gateway, with sandbox tokens.
+      XENIA_PUSH_GATEWAY[sdk=iphonesimulator*]: http://localhost:8009/_matrix/push/v1/notify
+    Release:
+      XENIA_RUST_PROFILE: release
+
+targets:
+  XeniaCore:
+    type: framework.static
+    platform: [iOS, macOS]
+    sources:
+      - path: XeniaCore/Generated/XeniaCore.swift
+      - path: XeniaCore/Generated/include
+        buildPhase: none
+    preBuildScripts:
+      - name: Build xenia-core (Rust)
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        script: |
+          "${SRCROOT}/../scripts/apple/build-core.sh"
+        outputFiles:
+          - $(SRCROOT)/XeniaCore/Generated/XeniaCore.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.xenia.core
+        PRODUCT_NAME: XeniaCore
+        GENERATE_INFOPLIST_FILE: YES
+        # The generated bindings are nonisolated Swift 5 code, called from Rust's threads.
+        SWIFT_VERSION: "5.0"
+        SWIFT_DEFAULT_ACTOR_ISOLATION: nonisolated
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/XeniaCore/Generated/include
+        OTHER_SWIFT_FLAGS: -Xcc -fmodule-map-file=$(SRCROOT)/XeniaCore/Generated/include/module.modulemap
+        DEFINES_MODULE: YES
+        SKIP_INSTALL: YES
+        SWIFT_OPTIMIZATION_LEVEL[config=Debug]: -Onone
+        SUPPORTS_MACCATALYST: NO
+        CODE_SIGNING_ALLOWED: NO
+
+  Xenia:
+    type: application
+    platform: [iOS, macOS]
+    sources:
+      - path: Shared
+      - path: ${platform}
+        excludes:
+          - "**/*.entitlements"
+          - "Info.plist"
+      - path: Resources
+      - path: Privacy/PrivacyInfo.xcprivacy
+    dependencies:
+      - target: XeniaCore_${platform}
+        link: true
+        embed: false
+      - target: XeniaNotifications_${platform}
+        embed: true
+        codeSign: true
+      - target: XeniaConversation
+        platformFilter: iOS
+        embed: true
+        codeSign: true
+    settings:
+      base:
+        PRODUCT_NAME: Xenia
+        PRODUCT_BUNDLE_IDENTIFIER: $(XENIA_BUNDLE_ID)
+        SWIFT_VERSION: "6.0"
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY: YES
+        SWIFT_STRICT_CONCURRENCY: complete
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/XeniaCore/Generated/include
+        OTHER_SWIFT_FLAGS: -Xcc -fmodule-map-file=$(SRCROOT)/XeniaCore/Generated/include/module.modulemap
+        OTHER_LDFLAGS: $(inherited) $(XENIA_CORE_LIB) -framework Security -framework SystemConfiguration
+        ASSETCATALOG_COMPILER_APPICON_NAME: Xenia
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+        INFOPLIST_FILE: ${platform}/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ${platform}/Xenia.entitlements
+        ENABLE_PREVIEWS: YES
+        SUPPORTS_MACCATALYST: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        TARGETED_DEVICE_FAMILY[sdk=iphone*]: "1"
+      configs:
+        Debug:
+          # Local Mac builds sign to run locally, so they build without a provisioning profile,
+          # and so without iCloud (an ad-hoc app with iCloud entitlements won't launch).
+          CODE_SIGN_ENTITLEMENTS[sdk=macosx*]: macOS/Xenia-Debug.entitlements
+          CODE_SIGN_IDENTITY[sdk=macosx*]: "-"
+          CODE_SIGN_STYLE: Automatic
+          DEVELOPMENT_TEAM[sdk=macosx*]: ""
+
+  # Decrypts pushed messages into notifications while Xenia isn't running.
+  XeniaNotifications:
+    type: app-extension
+    platform: [iOS, macOS]
+    sources:
+      - path: NotificationService
+        excludes:
+          - "*.entitlements"
+          - "Info.plist"
+      - Shared/App/NotificationContent.swift
+      - Shared/App/NotificationExtras.swift
+      - Shared/App/AppEnvironment.swift
+      - Shared/Copy/Copy.swift
+      - Shared/Copy/Inflect.swift
+      - Shared/Platform/AppGroup.swift
+      - Shared/Platform/KeychainStore.swift
+      - Shared/Platform/FileSecretStore.swift
+      - Privacy/PrivacyInfo.xcprivacy
+    dependencies:
+      - target: XeniaCore_${platform}
+        link: true
+        embed: false
+    settings:
+      base:
+        PRODUCT_NAME: XeniaNotifications
+        PRODUCT_BUNDLE_IDENTIFIER: $(XENIA_BUNDLE_ID).notifications
+        # Notarization needs it on every executable the Mac app carries.
+        ENABLE_HARDENED_RUNTIME: YES
+        INFOPLIST_FILE: NotificationService/Info.plist
+        CODE_SIGN_ENTITLEMENTS: NotificationService/XeniaNotifications.entitlements
+        CODE_SIGN_ENTITLEMENTS[sdk=macosx*]: NotificationService/XeniaNotifications-macOS.entitlements
+        SWIFT_VERSION: "6.0"
+        # The extension has no UI: its work runs off the main actor.
+        SWIFT_DEFAULT_ACTOR_ISOLATION: nonisolated
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/XeniaCore/Generated/include
+        OTHER_SWIFT_FLAGS: -Xcc -fmodule-map-file=$(SRCROOT)/XeniaCore/Generated/include/module.modulemap
+        OTHER_LDFLAGS: $(inherited) $(XENIA_CORE_LIB) -framework Security -framework SystemConfiguration
+        TARGETED_DEVICE_FAMILY[sdk=iphone*]: "1"
+        APPLICATION_EXTENSION_API_ONLY: YES
+      configs:
+        Debug:
+          # Signed to run locally like the Mac app, so without the group or push (see the app).
+          CODE_SIGN_ENTITLEMENTS[sdk=macosx*]: NotificationService/XeniaNotifications-macOS-Debug.entitlements
+          CODE_SIGN_IDENTITY[sdk=macosx*]: "-"
+          DEVELOPMENT_TEAM[sdk=macosx*]: ""
+
+  # Long-press a notification (iPhone): the conversation so far, and replies sent from it.
+  XeniaConversation:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: NotificationConversation
+        excludes:
+          - "*.entitlements"
+          - "Info.plist"
+      - Shared/App/NotificationContent.swift
+      - Shared/App/AppEnvironment.swift
+      - Shared/Copy/Copy.swift
+      - Shared/Copy/Inflect.swift
+      - Shared/Platform/AppGroup.swift
+      - Shared/Platform/KeychainStore.swift
+      - Shared/Design/Theme.swift
+      - Shared/Design/SystemColors.swift
+      - Shared/Design/PersonColor.swift
+      - Shared/Conversation/BubbleShape.swift
+      - Privacy/PrivacyInfo.xcprivacy
+    dependencies:
+      - target: XeniaCore_iOS
+        link: true
+        embed: false
+      # The system looks up the extension's classes in the launcher binary itself.
+      - sdk: UserNotificationsUI.framework
+    settings:
+      base:
+        PRODUCT_NAME: XeniaConversation
+        ENABLE_DEBUG_DYLIB: NO
+        PRODUCT_BUNDLE_IDENTIFIER: $(XENIA_BUNDLE_ID).conversation
+        INFOPLIST_FILE: NotificationConversation/Info.plist
+        CODE_SIGN_ENTITLEMENTS: NotificationConversation/XeniaConversation.entitlements
+        SWIFT_VERSION: "6.0"
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/XeniaCore/Generated/include
+        OTHER_SWIFT_FLAGS: -Xcc -fmodule-map-file=$(SRCROOT)/XeniaCore/Generated/include/module.modulemap
+        OTHER_LDFLAGS: $(inherited) $(XENIA_CORE_LIB) -framework Security -framework SystemConfiguration
+        TARGETED_DEVICE_FAMILY: "1"
+        APPLICATION_EXTENSION_API_ONLY: YES
+
+  XeniaTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: Xenia_macOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(XENIA_BUNDLE_ID).tests
+        SWIFT_VERSION: "6.0"
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/XeniaCore/Generated/include
+        OTHER_SWIFT_FLAGS: -Xcc -fmodule-map-file=$(SRCROOT)/XeniaCore/Generated/include/module.modulemap
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Xenia.app/Contents/MacOS/Xenia
+        BUNDLE_LOADER: $(TEST_HOST)
+
+  XeniaTests_iOS:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: Xenia_iOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(XENIA_BUNDLE_ID).tests
+        SWIFT_VERSION: "6.0"
+        SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+        SWIFT_APPROACHABLE_CONCURRENCY: YES
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/XeniaCore/Generated/include
+        OTHER_SWIFT_FLAGS: -Xcc -fmodule-map-file=$(SRCROOT)/XeniaCore/Generated/include/module.modulemap
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Xenia.app/Xenia
+        BUNDLE_LOADER: $(TEST_HOST)
+
+schemes:
+  Xenia macOS:
+    build:
+      targets:
+        Xenia_macOS: all
+        XeniaTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - XeniaTests
+    archive:
+      config: Release
+  Xenia iOS:
+    build:
+      targets:
+        Xenia_iOS: all
+        XeniaTests_iOS: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - XeniaTests_iOS
+    archive:
+      config: Release

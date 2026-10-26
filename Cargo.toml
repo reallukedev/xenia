@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = ["crates/xenia-core", "crates/uniffi-bindgen"]
+
+[workspace.package]
+version = "1.0.0"
+edition = "2024"
+rust-version = "1.96"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/reallukedev/xenia"
+homepage = "https://github.com/reallukedev/xenia"
+
+[workspace.dependencies]
+uniffi = { version = "0.31.0", default-features = false }
+
+[profile.dev]
+# Keeps debug builds small; the matrix-sdk dependency tree is large.
+debug = 0
+
+[profile.dev.package."*"]
+# Dependencies are optimized even in debug builds: crypto and SQLite are painfully slow unoptimized.
+opt-level = 2
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"
+
+# Build scripts and proc macros load into the compiler: stripping them on macOS removes the
+# metadata rustc needs ("can't find crate for tokio_macros").
+[profile.release.build-override]
+strip = false

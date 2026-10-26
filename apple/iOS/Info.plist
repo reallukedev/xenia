@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Xenia</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>CFBundleURLName</key>
+			<string>dev.xenia.matrix.links</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>matrix</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>INIntentsSupported</key>
+	<array>
+		<string>INSendMessageIntent</string>
+	</array>
+	<key>INIntentsRestrictedWhileLocked</key>
+	<array>
+		<string>INSendMessageIntent</string>
+	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.social-networking</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Xenia uses the camera so you can take photos and videos to send in conversations.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Xenia uses Face ID to unlock your conversations when you turn on the lock in Settings.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Xenia connects to Matrix servers on your local network, like one running on your Mac.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Xenia uses the microphone to record sound with the videos you take to send in conversations.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Xenia saves photos and videos from conversations to your library when you ask it to.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Xenia lets you choose photos and videos to send in conversations.</string>
+	<key>NSSiriUsageDescription</key>
+	<string>Siri uses Xenia to send your messages to the chats and rooms you name.</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>INSendMessageIntent</string>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER).conversation</string>
+	</array>
+	<key>XeniaDefaultServer</key>
+	<string>$(XENIA_DEFAULT_SERVER)</string>
+	<key>XeniaAppGroup</key>
+	<string>$(XENIA_APP_GROUP)</string>
+	<key>XeniaKeychainGroup</key>
+	<string>$(AppIdentifierPrefix)dev.xenia.shared</string>
+	<key>XeniaPushGateway</key>
+	<string>$(XENIA_PUSH_GATEWAY)</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+</dict>
+</plist>

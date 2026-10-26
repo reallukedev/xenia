@@ -1,0 +1,10 @@
+// Signing and identifiers, shared by every target. Builds work without a team: the simulator and
+// Debug builds on the Mac sign to run locally. To build for a device or a Release, copy
+// Local.xcconfig.example to Local.xcconfig (git ignores it) and set your own team and bundle ID.
+
+DEVELOPMENT_TEAM =
+// The app's bundle ID. The extensions, the App Group and the iCloud store are named after it.
+XENIA_BUNDLE_ID = dev.xenia.matrix
+XENIA_APP_GROUP = group.$(XENIA_BUNDLE_ID)
+
+#include? "Local.xcconfig"
