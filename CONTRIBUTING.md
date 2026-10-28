@@ -44,6 +44,19 @@ yours notify while the app runs. On the simulator, run the local gateway with
 Run `xcodegen` whenever you add, move or remove a Swift file. The Xcode project itself isn't
 committed.
 
+### TestFlight
+
+```bash
+scripts/apple/testflight.sh             # archives both apps and uploads them to App Store Connect
+scripts/apple/testflight.sh ios         # just the iPhone app
+scripts/apple/testflight.sh --no-upload # signs and exports to target/testflight, uploads nothing
+```
+
+It signs with the team in `apple/Local.xcconfig` and uploads as the account signed in to Xcode,
+or with an App Store Connect API key when `ASC_KEY_PATH`, `ASC_KEY_ID` and `ASC_ISSUER_ID` are
+set. Xcode picks each upload's build number, so there's nothing to bump. The app record has to
+exist in App Store Connect first, under the bundle ID being built.
+
 ## Tests
 
 ```bash

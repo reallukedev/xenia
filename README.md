@@ -4,6 +4,8 @@
 
 <h1 align="center">Xenia</h1>
 
+<p align="center"><strong>Matrix, made beautiful.</strong></p>
+
 <p align="center">A <a href="https://matrix.org">Matrix</a> messenger for iPhone and Mac, with one Rust engine underneath.</p>
 
 <p align="center">
