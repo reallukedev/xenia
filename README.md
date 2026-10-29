@@ -212,3 +212,5 @@ code style and pull requests. Please report security problems privately, as
 ## License
 
 Xenia is released under the [GNU General Public License v3.0](LICENSE).
+
+Xenia is an independent project made by me. AI (Opus 5.5) was used to assist me in the development of this app. It isn't made by, affiliated with or endorsed by The Matrix Foundation.
